@@ -1,0 +1,5 @@
+[deps]
+WaveMC = "f85d90cf-446f-419e-8ce8-0b41d8173ef7"
+
+[compat]
+WaveMC = "0.1"

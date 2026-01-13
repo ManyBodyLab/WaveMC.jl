@@ -1,0 +1,17 @@
+name = "WaveMC"
+uuid = "f85d90cf-446f-419e-8ce8-0b41d8173ef7"
+version = "0.1.0"
+authors = ["Andreas Feuerpfeil <development@manybodylab.com>"]
+
+[deps]
+Carlo = "780c37f4-4e5a-43de-9e79-65c261e525a4"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[compat]
+Carlo = "0.3.1"
+Distributions = "0.25.123"
+Printf = "1.11.0"
+Random = "1.11.0"
+julia = "1.10"
