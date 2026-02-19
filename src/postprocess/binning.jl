@@ -1,18 +1,16 @@
-
-
-struct Data{T<:Real, L<:Real, A<:AbstractVector{T}}
+struct Data{T, L<:Real, A<:AbstractVector{T}}
     data::A
     weight::L 
 end 
-const DataSet{T, L, A} = Vector{Data{T,L, A}} where {A<:AbstractVector{T}} where {T<:Real, L<:Real}
-struct Bin{S<:Real, T<:Real}
+const DataSet{T, L, A} = Vector{Data{T,L, A}} where {A<:AbstractVector{T}} where {T, L<:Real}
+struct Bin{S, T<:Real, L<:Real}
     center::S
-    width::S
+    width::L
     weight::T   ## Can be counts, or normalized counts or counts or normalized counts weighted by the bin length etc...
 end
-const Histogram{S, T} = Vector{Bin{S,T}} where {S<:Real, T<:Real}
+const Histogram{S, T, L} = Vector{Bin{S,T, L}} where {S, T, L}
 
-function Histogram(data::AbstractVector{T}; kwargs...) where {T<:Real}
+function Histogram(data::AbstractVector{T}; kwargs...) where {T}
     return histogram(Data(data, 1); kwargs...)
 end
 

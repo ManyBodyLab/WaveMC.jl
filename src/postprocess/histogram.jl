@@ -1,4 +1,4 @@
-function Histogram(filedir, observable::String;
+function Histogram(filedir, observable;
         bins = 100,
         normalization=1,
         xscale=1,
@@ -17,7 +17,40 @@ function Histogram(filedir, observable::String;
     end
     return histograms
 end
-function Histogram(filedir, observable::String, task::Int;
+function Histogram(filedir, observable::AbstractVector{<:AbstractString}, task::Int;
+    x_len=nothing,
+    xscale=1,
+    bins = 100,
+    lo=nothing,
+    hi=nothing,
+    kwargs...
+)
+    taskname = "task$(lpad(string(task), 4, '0'))"
+    file = only(filter(x->x == taskname, readdir(filedir)))
+
+    runs = filter!(x->startswith(x, "run") && occursin("meas",x),readdir(joinpath(filedir,file)))
+
+    x = [read_runs(filedir, taskname, runs, obs) for obs in observable]
+    l = length(x[1])
+    bin_lengths = only(unique([d[2] for d in x])) ## Bin lengths of observables should be the same!
+    L = length(observable)
+    
+    dataset = map(1:l) do i 
+        datas = x[i]
+        weight = bin_lengths[i]
+    end
+
+
+    datas = Iterators.product((d[1] for d in x)...)
+    
+
+
+    dataset = [Data(datas[i], bin_lengths[i]) for i in eachindex(datas)]
+    x_len = isnothing(x_len) ? nothing : x_len*xscale
+    return adapt_histogram(Histogram(dataset; x_len=x_len, lo=lo, hi=hi, bins=bins); xscale=xscale, kwargs...)
+end
+
+function Histogram(filedir, observable::AbstractString, task::Int;
     x_len=nothing,
     xscale=1,
     bins = 100,
