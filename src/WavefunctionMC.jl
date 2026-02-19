@@ -25,7 +25,6 @@ struct WavefunctionMC{N, S<:State, D <: Distribution, F, X <: AbstractWavefuncti
             dynamic_positions::B = (N, 1:N),
             adaptor::A = adaptive ? AcceptanceAdapter(; acceptance_rate = target_accept, adapt_interval = adapt_interval) : NoAcceptanceAdapter()
         ) where {N, S, D <: Distribution, F, X <: AbstractWavefunction, obs <: AbstractObservables, B, A, U}
-        @show adaptor
         return new{N, S, D, F, X, obs, A, B, U}(state, Ref(distribution), coordinate_projector, wavefunction, observables, adaptor, dynamic_positions, coordinate_update)
     end
 end
