@@ -6,7 +6,7 @@ DocMeta.setdocmeta!(
 )
 
 # Copy the license file into docs/src
-cp(joinpath(@__DIR__, "..", "LICENSE"), joinpath(@__DIR__, "src", "LICENSE"); force=true)
+cp(joinpath(@__DIR__, "..", "LICENSE"), joinpath(@__DIR__, "src", "LICENSE"); force = true)
 
 
 include("make_index.jl")
@@ -18,8 +18,9 @@ makedocs(;
     format = Documenter.HTML(;
         canonical = "https://manybodylab.github.io/WaveMC.jl",
         edit_link = "main",
-        assets = [#"assets/logo.png", 
-            "assets/extras.css"],
+        assets = [#"assets/logo.png",
+            "assets/extras.css",
+        ],
     ),
     pages = ["Home" => "index.md", "Reference" => "reference.md"],
 )
