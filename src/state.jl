@@ -20,7 +20,6 @@ function coordinate_transformer(state::State)
 end
 function State(physical_position::AbstractVector{T}, logdensity::Float64, coordinate_transformer::G = Base.identity) where {T, G}
     pos = coordinate_transformer.(physical_position)
-    #pos = MVector{length(physical_position), eltype(pos)}(pos)
     return State(physical_position, Buffer(copy(pos); map = coordinate_transformer), logdensity, 0, 0)
 end
 
