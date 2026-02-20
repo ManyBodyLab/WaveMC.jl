@@ -52,11 +52,24 @@ function WavefunctionMC(params::AbstractDict)
     N = inputlength(wavefunction)
     sigma_dist = get(params, :sigma_distribution, 0.3)
     distribution = get(params, :distribution, S <: Complex ? ComplexNormal(0, sigma_dist) : Normal(0, sigma_dist))
-    position = coordinate_proj.(100 * rand(distribution, N))
+    position = [coordinate_proj(100 * rand(distribution)) for _ in 1:N]
 
     observables = get(params, :observables, NoObservables())
     dynamic_pos = get(params, :dynamic_positions, (N, 1:N))
-    return WavefunctionMC{N}(State(position, 0.0, coordinate_transf), distribution, coordinate_proj, wavefunction, observables; adapt_interval = div(get(params, :thermalization, 10_000), 10), dynamic_positions = dynamic_pos)
+
+    adapt_interval = get(params, :adapt_interval,div(get(params, :thermalization, 10_000), 10))
+    coordinate_update = get(params, :coordinate_update, CoordinateUpdate())
+    target_accept = get(params, :target_accept, optimal_acceptance_rate(coordinate_update))
+    adaptive = get(params, :adaptive, true)
+    active_during_run = get(params, :active_during_run, false)
+    update_distribution = get(params, :update_distribution, (d, adjustment) -> begin
+        sigma_new = d.σ * Base.exp(-adjustment)
+        return typeof(d)(d.μ, sigma_new)
+    end)
+    adaptor = adaptive ? AcceptanceAdapter(; acceptance_rate = target_accept, adapt_interval = adapt_interval, update_distribution = update_distribution, active_during_run = active_during_run) : NoAcceptanceAdapter()
+
+
+    return WavefunctionMC{N}(State(position, 0.0, coordinate_transf), distribution, coordinate_proj, wavefunction, observables; dynamic_positions = dynamic_pos, adaptor = adaptor, coordinate_update = coordinate_update)
 end
 
 function Carlo.write_checkpoint(mc::WavefunctionMC, out::HDF5.Group)
