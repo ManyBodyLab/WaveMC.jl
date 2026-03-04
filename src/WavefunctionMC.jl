@@ -62,7 +62,8 @@ function WavefunctionMC(params::AbstractDict)
         inds = findall(x -> ismissing(x) || isnothing(x), position)
         position[inds] = [i in dynamic_pos ? 100 * rand(distribution) : 0 * rand(distribution) for i in inds]
     end
-    position = FixedSizeArray(coordinate_proj.(position))
+    # position = FixedSizeArray(coordinate_proj.(position))
+    position = coordinate_proj.(position)
     @show typeof(position)
     @show position
 
