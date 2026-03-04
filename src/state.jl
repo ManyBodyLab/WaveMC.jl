@@ -1,5 +1,5 @@
-mutable struct State{S, B <: Buffer, F, C <: Integer} 
-    bare_position::Vector{S}
+mutable struct State{S, B <: Buffer, F, C <: Integer, A<:AbstractVector{S}} 
+    bare_position::A
     position::B
     logdensity::F
     num_accepts::C

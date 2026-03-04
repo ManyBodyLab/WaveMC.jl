@@ -53,7 +53,17 @@ function WavefunctionMC(params::AbstractDict)
     sigma_dist = get(params, :sigma_distribution, 0.3)
     distribution = get(params, :distribution, S <: Complex ? ComplexNormal(0, sigma_dist) : Normal(0, sigma_dist))
     dynamic_pos = get(params, :dynamic_positions, (N, 1:N))
-    position = [i in dynamic_pos ? coordinate_proj(100 * rand(distribution)) : coordinate_proj(0 * rand(distribution)) for i in 1:N]
+
+    position = get(params, :position, missing)
+    if ismissing(position)
+        position = [i in dynamic_pos ? 100 * rand(distribution) : 0 * rand(distribution) for i in 1:N]
+    end
+    if missing in position || nothing in position 
+        inds = findall(x -> x === missing || x === nothing, position)
+        position[inds] = [i in dynamic_pos ? 100 * rand(distribution) : 0 * rand(distribution) for i in inds]
+    end
+    position = FixedSizeArray(coordinate_proj.(position))
+    @show typeof(position)
 
     observables = get(params, :observables, NoObservables())
     

@@ -21,6 +21,7 @@ using ThreadsX
 using ChunkSplitters
 using CairoMakie
 using DataFrames
+using FixedSizeArrays
 
 include("wavefunction/wavefunction.jl")
 include("acceptance_rate/acceptance_rate_adapter.jl")
