@@ -64,6 +64,7 @@ function WavefunctionMC(params::AbstractDict)
     end
     position = FixedSizeArray(coordinate_proj.(position))
     @show typeof(position)
+    @show position
 
     observables = get(params, :observables, NoObservables())
     
