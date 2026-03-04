@@ -7,10 +7,10 @@ mutable struct State{S, B <: Buffer, F, C <: Integer, A<:AbstractVector{S}}
 end
 
 position(state::State) = state.position
-function Base.getindex(state::State, i)
+Base.@propagate_inbounds function Base.getindex(state::State, i)
     return state.position[i]
 end
-function Base.setindex!(state::State, v, i)
+Base.@propagate_inbounds function Base.setindex!(state::State, v, i)
     state.bare_position[i] = v
     return state.position[i] = v
 end

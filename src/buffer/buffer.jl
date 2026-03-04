@@ -21,15 +21,16 @@ Base.lastindex(b::Buffer) = lastindex(parent(b))
 Base.@propagate_inbounds Base.setindex!(b::Buffer, v, i) = (parent(b)[i] = b.map.(v))
 
 function Buffer(def::T, size; map::G = Base.identity) where {T, G}
-    return Buffer{T, AbstractVector{T}, G}(fill(def, size), map)
+    return Buffer(fill(def, size), map)
 end
 function Buffer(vec::AbstractVector{T}; map::G = Base.identity) where {T, G}
-    return Buffer{T, AbstractVector{T}, G}(vec, map)
+    return Buffer(vec, map)
 end
 
 function coordinate_transformer(b::Buffer)
     return b.map
 end
+
 
 # """
 #     Buffer{T, A<:AbstractVector{T}, G} 
