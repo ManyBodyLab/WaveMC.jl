@@ -35,7 +35,21 @@ struct NoObservables <: AbstractObservables end
     observable_structs::OS = NTuple{0, Observable}()
 end
 
-function distance!(buf::AbstractVector, bare_pos, pos, f::Function = Base.abs)
+function distance!(buf::AbstractVector, bare_pos, pos, f::F = Base.abs) where {F}
+    N = length(pos)
+    @boundscheck length(buf) >= div(N * (N - 1), 2)
+    counter = 1
+    @inbounds for i in 1:(N - 1)
+        x = pos[i]
+        for j in (i + 1):N
+            buf[counter] = f(x - pos[j])
+            counter += 1
+        end
+    end
+    return buf
+end
+
+function distance2!(buf::AbstractVector, bare_pos, pos, f::F = Base.abs2) where {F}
     N = length(pos)
     @boundscheck length(buf) >= div(N * (N - 1), 2)
     counter = 1
