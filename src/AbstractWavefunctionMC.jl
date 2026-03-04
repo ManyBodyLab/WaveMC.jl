@@ -34,7 +34,7 @@ function Carlo.init!(mc::AbstractWavefunctionMC{N}, ctx::MCContext, params::Abst
     mc_state = state(mc)
     N_active, dynamic_pos = dynamic_positions(mc)
 
-    mc_state[:] = [coordinate_projector(mc)(rand(ctx.rng, distribution(mc))) for _ in 1:N]
+    mc_state[dynamic_pos] = [coordinate_projector(mc)(rand(ctx.rng, distribution(mc))) for _ in 1:N_active]
 
     mc_state.logdensity = logdensity(wavefunction(mc), position(mc_state).buffer)
     mc_state.num_accepts = 0

@@ -52,10 +52,11 @@ function WavefunctionMC(params::AbstractDict)
     N = inputlength(wavefunction)
     sigma_dist = get(params, :sigma_distribution, 0.3)
     distribution = get(params, :distribution, S <: Complex ? ComplexNormal(0, sigma_dist) : Normal(0, sigma_dist))
-    position = [coordinate_proj(100 * rand(distribution)) for _ in 1:N]
+    dynamic_pos = get(params, :dynamic_positions, (N, 1:N))
+    position = [i in dynamic_pos ? coordinate_proj(100 * rand(distribution)) : coordinate_proj(0 * rand(distribution)) for i in 1:N]
 
     observables = get(params, :observables, NoObservables())
-    dynamic_pos = get(params, :dynamic_positions, (N, 1:N))
+    
 
     adapt_interval = get(params, :adapt_interval,div(get(params, :thermalization, 10_000), 10))
     coordinate_update = get(params, :coordinate_update, CoordinateUpdate())
