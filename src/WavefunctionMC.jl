@@ -55,11 +55,11 @@ function WavefunctionMC(params::AbstractDict)
     dynamic_pos = get(params, :dynamic_positions, (N, 1:N))
 
     position = get(params, :position, missing)
-    if ismissing(position)
+    if ismissing(position) || isnothing(position)
         position = [i in dynamic_pos ? 100 * rand(distribution) : 0 * rand(distribution) for i in 1:N]
     end
-    if missing in position || nothing in position 
-        inds = findall(x -> x === missing || x === nothing, position)
+    if any(ismissing, position) || any(isnothing, position)
+        inds = findall(x -> ismissing(x) || isnothing(x), position)
         position[inds] = [i in dynamic_pos ? 100 * rand(distribution) : 0 * rand(distribution) for i in inds]
     end
     position = FixedSizeArray(coordinate_proj.(position))
