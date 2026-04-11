@@ -66,7 +66,7 @@ function WavefunctionMC(params::AbstractDict)
     observables = get(params, :observables, NoObservables())
     
 
-    adapt_interval = get(params, :adapt_interval,div(get(params, :thermalization, 10_000), 10))
+    adapt_interval = get(params, :adapt_interval,max(div(get(params, :thermalization, 10_000), 10),1))
     coordinate_update = get(params, :coordinate_update, CoordinateUpdate())
     target_accept = get(params, :target_accept, optimal_acceptance_rate(coordinate_update))
     adaptive = get(params, :adaptive, true)
