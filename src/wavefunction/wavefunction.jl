@@ -80,7 +80,9 @@ coordinate_projector(psi::SemiDirectProductWavefunction{D, T, N, S, coordinate_p
 coordinate_transformer(psi::SemiDirectProductWavefunction{D, T, N, S, coordinate_proj, coordinate_trans}) where {D, T, N, S, coordinate_proj, coordinate_trans} = coordinate_trans
 
 
-
+@inline function (psi::SemiDirectProductWavefunction)(x)
+    return prod(wf(view(x, psi.coordinates[i])) for (i,wf) in enumerate(psi.wavefunctions))
+end
 @inline function _abs2(psi::SemiDirectProductWavefunction, x)
     return prod(_abs2(wf, view(x, psi.coordinates[i])) for (i,wf) in enumerate(psi.wavefunctions))
 end
