@@ -65,9 +65,10 @@ function _extract_weights(data, edge_vec, nbins, lo_edge, hi_edge, step_, indice
     local_weights = zeros(Int, nbins)
     @inbounds @simd for i in indices
         x = data[i]
-        x < lo_edge || x > hi_edge && continue
-        idx = _find_bin(edge_vec, x, nbins, lo_edge, step_)
-        local_weights[idx] += 1
+        if lo_edge <= x <= hi_edge
+            idx = _find_bin(edge_vec, x, nbins, lo_edge, step_)
+            local_weights[idx] += 1
+        end
     end
     return local_weights
 end
