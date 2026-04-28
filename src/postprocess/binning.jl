@@ -6,19 +6,6 @@ const DataSet{T, L, A} = Vector{Data{T,L,A}} where {A<:AbstractVector{T}} where 
 
 linear_edges(lo, hi, n::Int) = collect(range(lo, hi, length=n+1))
 
-function _fit_histogram(dataset::DataSet{T,L,A}, edges::AbstractVector; closed::Symbol=:left) where {T<:Real, L<:Real, A}
-    n_total = sum(length(d.data) for d in dataset)
-    data_all = Vector{T}(undef, n_total)
-    wts_all  = Vector{Float64}(undef, n_total)
-    idx = 1
-    for d in dataset
-        n = length(d.data)
-        data_all[idx:idx+n-1] .= d.data
-        wts_all[idx:idx+n-1]  .= d.weight
-        idx += n
-    end
-    return fit(StatsBase.Histogram, data_all, StatsBase.weights(wts_all), edges; closed)
-end
 
 function _apply_normalization(h::StatsBase.Histogram, normalization)
     normalization in (1, :none) && return h
@@ -35,8 +22,10 @@ function Histogram(
     hi = nothing,
     edges = nothing,
     normalization = :none,
+    density::Bool = false,
     xscale::Real = 1,
 ) where {T<:Real, L<:Real, A}
+    density && (normalization = :pdf)
     if isnothing(lo) && isnothing(hi)
         lohi = map(d -> ThreadsX.extrema(d.data), dataset)
         lo = minimum(first.(lohi))
@@ -58,7 +47,9 @@ function Histogram(
         collect(edges)
     end
 
-    h = _fit_histogram(dataset, edge_vec)
+    data_all = reduce(vcat, d.data for d in dataset)
+    wts_all  = reduce(vcat, fill(Float64(d.weight), length(d.data)) for d in dataset)
+    h = fit(StatsBase.Histogram, data_all, StatsBase.weights(wts_all), edge_vec)
     return _apply_normalization(h, normalization)
 end
 
@@ -77,15 +68,28 @@ function rebin(h::StatsBase.Histogram; bins::Int=100, edges=nothing)
         collect(edges)
     end
     centers = bin_centers(h)
-    wts = StatsBase.weights(float.(h.weights))
-    return fit(StatsBase.Histogram, centers, wts, edge_vec)
+    new_weights = zeros(Float64, length(edge_vec) - 1)
+    tmp = StatsBase.Histogram(edge_vec)
+    for (c, w) in zip(centers, float.(h.weights))
+        idx = StatsBase.binindex(tmp, c)
+        checkbounds(Bool, new_weights, idx) && (new_weights[idx] += w)
+    end
+    return StatsBase.Histogram(edge_vec, new_weights)
 end
 
 function histogram_interpolation(
     h::StatsBase.Histogram;
+    order::Int = 1,
     extrapolation_bc = Interpolations.Flat()
 )
     centers = bin_centers(h)
     density = bin_weights(h) ./ bin_widths(h)
-    return Interpolations.linear_interpolation(centers, density; extrapolation_bc)
+    if order == 0
+        itp = Interpolations.interpolate((centers,), density, Interpolations.Gridded(Interpolations.Constant()))
+        return Interpolations.extrapolate(itp, extrapolation_bc)
+    elseif order == 1
+        return Interpolations.linear_interpolation(centers, density; extrapolation_bc)
+    else
+        error("order must be 0 or 1")
+    end
 end
