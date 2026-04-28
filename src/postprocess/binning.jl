@@ -55,7 +55,7 @@ function extract_weights(dataset::DataSet{T,L,A}, edge_vec, nbins, lo_edge, hi_e
     weights = sum(thread_weights)
     return weights
 end
-function _extract_weights(dataset::Vector{Data{T,L,A}}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
+function _extract_weights(dataset::AbstractVector{Data{T,L,A}}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
     local_weights = zeros(L, nbins)
     for d in dataset
         @inbounds for x in d.data
