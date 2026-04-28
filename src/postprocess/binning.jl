@@ -41,30 +41,41 @@ function Histogram(
     nbins = length(edge_vec) - 1
     lo_edge = first(edge_vec)
     hi_edge = last(edge_vec)
-    weights = extract_weights(dataset, edge_vec, nbins, lo_edge, hi_edge)
+    weights = extract_data_weights(dataset, edge_vec, nbins, lo_edge, hi_edge)
     h = StatsBase.Histogram(edge_vec, weights)
     return normalize(h, mode=normalization)
 end
-function extract_weights(dataset::DataSet{T,L,A}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
-    thread_weights = [zeros(L, nbins) for _ in 1:Threads.nthreads()]
-    Chunks = index_chunks(1:length(dataset); n = Threads.nthreads())
-    thread_weights = [zeros(L, nbins) for _ in 1:Threads.nthreads()]
-    Threads.@threads for (idx, r) in enumerate(Chunks)
-        thread_weights[idx] = _extract_weights(@view(dataset[r]), edge_vec, nbins, lo_edge, hi_edge)
+function extract_data_weights(dataset::DataSet{T,L,A}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
+    weights = zeros(L, nbins)
+    for data in dataset
+        weights .+= extract_weights(data, edge_vec, nbins, lo_edge, hi_edge)
     end
-    weights = sum(thread_weights)
     return weights
 end
-function _extract_weights(dataset::AbstractVector{Data{T,L,A}}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
-    local_weights = zeros(L, nbins)
-    for d in dataset
-        @inbounds for x in d.data
-            x < lo_edge || x > hi_edge && continue
-            idx = clamp(searchsortedlast(edge_vec, x), 1, nbins)
-            local_weights[idx] += d.weight
-        end
+function extract_weights(data::Data{T,L,A}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
+    step_ = edge_vec isa AbstractRange ? step(edge_vec) : 0.0
+    chunks = index_chunks(eachindex(data.data); n = Threads.nthreads())
+    thread_weights = [zeros(Int, nbins) for _ in 1:Threads.nthreads()]
+    Threads.@threads for (idx, r) in enumerate(chunks)
+        thread_weights[idx] = _extract_weights(data.data, edge_vec, nbins, lo_edge, hi_edge, step_, r)
+    end
+    return sum(thread_weights) * data.weight
+end
+function _extract_weights(data, edge_vec, nbins, lo_edge, hi_edge, step_, indices)
+    local_weights = zeros(Int, nbins)
+    @simd @inbounds for i in indices
+        x = data[i]
+        x < lo_edge || x > hi_edge && continue
+        idx = _find_bin(edge_vec, x, nbins, lo_edge, step_)
+        local_weights[idx] += 1
     end
     return local_weights
+end
+@inline function _find_bin(edge_vec, x, nbins, lo_edge, step_)
+    return clamp(searchsortedlast(edge_vec, x), 1, nbins)
+end
+@inline function _find_bin(edge_vec::AbstractRange, x, nbins, lo_edge, step_)
+    return clamp(floor(Int, (x - lo_edge) / step_) + 1, 1, nbins)
 end
 
 bin_centers(h::StatsBase.Histogram) = StatsBase.midpoints(first(h.edges))
