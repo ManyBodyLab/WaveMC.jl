@@ -63,7 +63,7 @@ function extract_weights(data::Data{T,L,A}, edge_vec, nbins, lo_edge, hi_edge) w
 end
 function _extract_weights(data, edge_vec, nbins, lo_edge, hi_edge, step_, indices)
     local_weights = zeros(Int, nbins)
-    @simd @inbounds for i in indices
+    @inbounds @simd for i in indices
         x = data[i]
         x < lo_edge || x > hi_edge && continue
         idx = _find_bin(edge_vec, x, nbins, lo_edge, step_)
