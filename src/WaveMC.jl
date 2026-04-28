@@ -14,6 +14,7 @@ export histogram_interpolation, linear_edges, rebin
 
 using Carlo
 using Printf
+using LinearAlgebra
 
 using Distributions
 using Random
