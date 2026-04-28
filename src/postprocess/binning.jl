@@ -42,6 +42,8 @@ function Histogram(
     lo_edge = first(edge_vec)
     hi_edge = last(edge_vec)
     weights = extract_data_weights(dataset, edge_vec, nbins, lo_edge, hi_edge)
+    l = sum(weights)
+    weights ./= l
     h = StatsBase.Histogram(edge_vec, weights)
     return normalize(h, mode=normalization)
 end
