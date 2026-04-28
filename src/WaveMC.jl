@@ -9,6 +9,8 @@ export ComplexNormal
 export AbstractWavefunctionMC, WavefunctionMC
 export BufferedObservables
 export Histogram, plot_histogram
+export bin_centers, bin_widths, bin_weights
+export histogram_interpolation, linear_edges, rebin
 
 using Carlo
 using Printf
@@ -18,7 +20,9 @@ using Random
 using HDF5
 
 using ThreadsX
-using ChunkSplitters
+import StatsBase
+import StatsBase: Histogram
+using Interpolations
 using CairoMakie
 using DataFrames
 using FixedSizeArrays
