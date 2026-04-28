@@ -81,6 +81,7 @@ function plot_histogram(h::StatsBase.Histogram;
     rescaling_function = x -> 1,
     title = "",
     color = :blue,
+    density = false,
 )
     @show rescaling_function
     centers = bin_centers(h)
