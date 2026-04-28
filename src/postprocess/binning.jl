@@ -41,19 +41,30 @@ function Histogram(
     nbins = length(edge_vec) - 1
     lo_edge = first(edge_vec)
     hi_edge = last(edge_vec)
-    thread_weights = [zeros(Float64, nbins) for _ in 1:Threads.nthreads()]
-    Threads.@threads for d in dataset
-        buf = thread_weights[Threads.threadid()]
-        w = Float64(d.weight)
-        for x in d.data
-            x < lo_edge || x > hi_edge && continue
-            idx = clamp(searchsortedlast(edge_vec, x), 1, nbins)
-            buf[idx] += w
-        end
-    end
-    weights = sum(thread_weights)
+    weights = extract_weights(dataset, edge_vec, nbins, lo_edge, hi_edge)
     h = StatsBase.Histogram(edge_vec, weights)
     return normalize(h, mode=normalization)
+end
+function extract_weights(dataset::DataSet{T,L,A}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
+    thread_weights = [zeros(L, nbins) for _ in 1:Threads.nthreads()]
+    Chunks = index_chunks(1:length(dataset); n = Threads.nthreads())
+    thread_weights = [zeros(L, nbins) for _ in 1:Threads.nthreads()]
+    Threads.@threads for (idx, r) in enumerate(Chunks)
+        thread_weights[idx] = _extract_weights(@view(dataset[r]), edge_vec, nbins, lo_edge, hi_edge)
+    end
+    weights = sum(thread_weights)
+    return weights
+end
+function _extract_weights(dataset::Vector{Data{T,L,A}}, edge_vec, nbins, lo_edge, hi_edge) where {T<:Real, L<:Real, A}
+    local_weights = zeros(L, nbins)
+    for d in dataset
+        @inbounds for x in d.data
+            x < lo_edge || x > hi_edge && continue
+            idx = clamp(searchsortedlast(edge_vec, x), 1, nbins)
+            local_weights[idx] += d.weight
+        end
+    end
+    return local_weights
 end
 
 bin_centers(h::StatsBase.Histogram) = StatsBase.midpoints(first(h.edges))
