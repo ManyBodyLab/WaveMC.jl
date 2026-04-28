@@ -6,18 +6,9 @@ const DataSet{T, L, A} = Vector{Data{T,L,A}} where {A<:AbstractVector{T}} where 
 
 linear_edges(lo, hi, n::Int) = collect(range(lo, hi, length=n+1))
 
-
-function _apply_normalization(h::StatsBase.Histogram, normalization)
-    normalization in (1, :none) && return h
-    normalization isa Symbol && return StatsBase.normalize(h; mode=normalization)
-    h2 = float(h)
-    h2.weights ./= normalization
-    return h2
-end
-
 function Histogram(
     dataset::DataSet{T,L,A};
-    bins::Int = 100,
+    bins::Int = ceil(Int, log2(length(dataset))) + 1,
     lo = nothing,
     hi = nothing,
     edges = nothing,
@@ -47,10 +38,22 @@ function Histogram(
         collect(edges)
     end
 
-    data_all = reduce(vcat, d.data for d in dataset)
-    wts_all  = reduce(vcat, fill(Float64(d.weight), length(d.data)) for d in dataset)
-    h = fit(StatsBase.Histogram, data_all, StatsBase.weights(wts_all), edge_vec)
-    return _apply_normalization(h, normalization)
+    nbins = length(edge_vec) - 1
+    lo_edge = first(edge_vec)
+    hi_edge = last(edge_vec)
+    thread_weights = [zeros(Float64, nbins) for _ in 1:Threads.nthreads()]
+    Threads.@threads for d in dataset
+        buf = thread_weights[Threads.threadid()]
+        w = Float64(d.weight)
+        for x in d.data
+            x < lo_edge || x > hi_edge && continue
+            idx = clamp(searchsortedlast(edge_vec, x), 1, nbins)
+            buf[idx] += w
+        end
+    end
+    weights = sum(thread_weights)
+    h = StatsBase.Histogram(edge_vec, weights)
+    return normalize(h, mode=normalization)
 end
 
 bin_centers(h::StatsBase.Histogram) = StatsBase.midpoints(first(h.edges))
@@ -69,10 +72,12 @@ function rebin(h::StatsBase.Histogram; bins::Int=100, edges=nothing)
     end
     centers = bin_centers(h)
     new_weights = zeros(Float64, length(edge_vec) - 1)
-    tmp = StatsBase.Histogram(edge_vec)
+    lo_edge = first(edge_vec)
+    hi_edge = last(edge_vec)
     for (c, w) in zip(centers, float.(h.weights))
-        idx = StatsBase.binindex(tmp, c)
-        checkbounds(Bool, new_weights, idx) && (new_weights[idx] += w)
+        c < lo_edge || c > hi_edge && continue
+        idx = clamp(searchsortedlast(edge_vec, c), 1, length(new_weights))
+        new_weights[idx] += w
     end
     return StatsBase.Histogram(edge_vec, new_weights)
 end

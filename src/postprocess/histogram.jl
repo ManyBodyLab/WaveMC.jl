@@ -79,10 +79,10 @@ function plot_histogram(h::StatsBase.Histogram;
     xlabel = L"r",
     ylabel = L"g(r)",
     rescaling_function = x -> 1,
-    density::Bool = true,
     title = "",
     color = :blue,
 )
+    @show rescaling_function
     centers = bin_centers(h)
     ydata = density ? bin_weights(h) ./ bin_widths(h) : float.(bin_weights(h))
     ydata = rescaling_function.(centers) .* ydata
