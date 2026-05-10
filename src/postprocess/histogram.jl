@@ -18,15 +18,7 @@ function Histogram(filedir, observable;
     return histograms
 end
 
-function Histogram(filedir, observable::AbstractVector{<:AbstractString}, task::Int;
-    xscale = 1,
-    bins = 100,
-    lo = nothing,
-    hi = nothing,
-    edges = nothing,
-    normalization = :none,
-    kwargs...
-)
+function Histogram(filedir, observable::AbstractVector{<:AbstractString}, task::Int;kwargs...)
     taskname = "task$(lpad(string(task), 4, '0'))"
     file = only(filter(x->x == taskname, readdir(filedir)))
     runs = filter!(x->startswith(x, "run") && occursin("meas",x), readdir(joinpath(filedir,file)))
@@ -36,25 +28,17 @@ function Histogram(filedir, observable::AbstractVector{<:AbstractString}, task::
 
     datas = Iterators.product((d[1] for d in x)...)
     dataset = [Data(collect(datas[i]), bin_lengths[i]) for i in eachindex(datas)]
-    return Histogram(dataset; bins=bins, lo=lo, hi=hi, edges=edges, normalization=normalization, xscale=xscale)
+    return Histogram(dataset; kwargs...)
 end
 
-function Histogram(filedir, observable::AbstractString, task::Int;
-    xscale = 1,
-    bins = 100,
-    lo = nothing,
-    hi = nothing,
-    edges = nothing,
-    normalization = :none,
-    kwargs...
-)
+function Histogram(filedir, observable::AbstractString, task::Int; kwargs...)
     taskname = "task$(lpad(string(task), 4, '0'))"
     file = only(filter(x->x == taskname, readdir(filedir)))
     runs = filter!(x->startswith(x, "run") && occursin("meas",x), readdir(joinpath(filedir,file)))
 
     datas, bin_lengths = read_runs(filedir, taskname, runs, observable)
     dataset = [Data(datas[i], bin_lengths[i]) for i in eachindex(datas)]
-    return Histogram(dataset; bins=bins, lo=lo, hi=hi, edges=edges, normalization=normalization, xscale=xscale)
+    return Histogram(dataset; kwargs...)
 end
 
 function read_runs(filedir, taskname, runs, observable)
@@ -82,10 +66,11 @@ function plot_histogram(h::StatsBase.Histogram;
     title = "",
     color = :blue,
     density = false,
+    area_function = bin_widths,
 )
     @show rescaling_function
     centers = bin_centers(h)
-    ydata = density ? bin_weights(h) ./ bin_widths(h) : float.(bin_weights(h))
+    ydata = density ? bin_weights(h) ./ area_function(h) : float.(bin_weights(h))
     ydata = rescaling_function.(centers) .* ydata
 
     lo = first(first(h.edges))

@@ -14,7 +14,9 @@ function Histogram(
     edges = nothing,
     normalization = :none,
     density::Bool = false,
+    total = 1,
     xscale::Real = 1,
+    area = v->diff(v),
 ) where {T<:Real, L<:Real, A}
     density && (normalization = :pdf)
     if isnothing(lo) && isnothing(hi)
@@ -37,13 +39,14 @@ function Histogram(
     else
         collect(edges)
     end
+    areas = area(edge_vec)
 
     nbins = length(edge_vec) - 1
     lo_edge = first(edge_vec)
     hi_edge = last(edge_vec)
     weights = extract_data_weights(dataset, edge_vec, nbins, lo_edge, hi_edge)
     l = sum(weights)
-    weights ./= l
+    weights = (weights ./ l).* total ./areas
     h = StatsBase.Histogram(edge_vec, weights)
     return normalize(h, mode=normalization)
 end
@@ -110,16 +113,30 @@ end
 function histogram_interpolation(
     h::StatsBase.Histogram;
     order::Int = 1,
-    extrapolation_bc = Interpolations.Flat()
+    extrapolation_bc = Interpolations.Flat(),
+    density = false,
 )
     centers = bin_centers(h)
-    density = bin_weights(h) ./ bin_widths(h)
+    dens = bin_weights(h)
+    if density 
+        widths = bin_widths(h)
+        dens ./= widths
+    end
+    knots = centers
+
     if order == 0
-        itp = Interpolations.interpolate((centers,), density, Interpolations.Gridded(Interpolations.Constant()))
-        return Interpolations.extrapolate(itp, extrapolation_bc)
+        edge_knots = collect(first(h.edges))
+        dens_ext = [first(dens); dens]
+        return extrapolate(interpolate((edge_knots,), dens_ext, Gridded(Constant{Previous}())), extrapolation_bc)
     elseif order == 1
-        return Interpolations.linear_interpolation(centers, density; extrapolation_bc)
+        return extrapolate(interpolate((collect(knots),), dens, Gridded(Linear())), extrapolation_bc)
+        ## TODO: Use order = 1 extrapolation to use regular grid for higher order interpolation
+    # elseif order == 2
+    #     return extrapolate(Interpolations.scale(interpolate(dens, BSpline(Quadratic(Flat(OnGrid())))), (knots,)), extrapolation_bc)
+    # elseif order == 3
+    #     return cubic_spline_interpolation(centers, dens; extrapolation_bc=extrapolation_bc)
+    #     return extrapolate(Interpolations.scale(interpolate(dens, BSpline(Cubic(Flat(OnGrid())))), (knots,)), extrapolation_bc)
     else
-        error("order must be 0 or 1")
+        error("order must be 0, 1")
     end
 end
