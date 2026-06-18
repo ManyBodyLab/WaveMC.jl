@@ -40,6 +40,9 @@ end
     return logdensity(psi, xnew_vec) - logdensity(psi, xold)
 end
 
+@inline on_accept!(::AbstractWavefunction, xnew, x::AbstractVector, dim::Int) = nothing
+@inline on_reject!(::AbstractWavefunction, xold, x::AbstractVector, dim::Int) = nothing
+
 struct ProductWavefunction{D <: Tuple} <: AbstractWavefunction
     wavefunctions::D 
 end

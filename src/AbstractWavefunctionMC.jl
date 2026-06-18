@@ -72,6 +72,9 @@ function _update_coordinates(ctx::MCContext, dynamic_pos, bare_position, d, coor
             buffer.buffer[dim] = x_new_transformed
             mc_state.logdensity = logdens_new
             mc_state.num_accepts += 1
+            on_accept!(wavefunc, x_new_transformed, buffer.buffer, dim)
+        else
+            on_reject!(wavefunc, buffer.buffer[dim], buffer.buffer, dim)
         end
     end
     return nothing

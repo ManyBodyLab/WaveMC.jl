@@ -7,6 +7,7 @@ module WaveMC
 
 export ComplexNormal
 export AbstractWavefunctionMC, WavefunctionMC
+export on_accept!, on_reject!
 export BufferedObservables
 export Histogram, plot_histogram
 export bin_centers, bin_widths, bin_weights
